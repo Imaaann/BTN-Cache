@@ -6,8 +6,6 @@ Caching is a technique used to store frequently accessed data in a fast storage 
 
 Think of caching as having a whiteboard in your office with commonly referenced information instead of looking it up in a filing cabinet each time. It improves performance and reduces the load on slower resources.
 
-![Cache Concept](https://i.imgur.com/n7BODdS.png)
-
 ---
 
 ## Types of Caches
@@ -45,15 +43,20 @@ Caching is not just about speed. It also improves system efficiency, reduces cos
 
 ## In-Memory Caching in Depth
 
-In-memory caching is the fastest type of caching because it uses RAM instead of disk storage. It is particularly effective for applications with frequent read operations. Since memory is limited, managing what stays in cache is essential.
+In-memory caching stores data directly in RAM, which makes it the fastest type of caching available. Accessing data from memory is significantly quicker than reading from a database or disk, often measured in microseconds. This makes in-memory caching ideal for applications that frequently read the same data, such as popular product details, session information, or computed results.
+
+However, because memory is limited, careful management is necessary to ensure efficiency and reliability.
 
 **Key Considerations:**
 
-- **Volatility:** Data is lost on server restart.
-- **Memory Limit:** Requires careful sizing and eviction policies.
-- **Consistency:** Cached data may become stale; strategies must handle updates.
+1. **Volatility:**  
+   Data stored in memory is temporary. If the server restarts or crashes, all cached data is lost. It's important to have mechanisms to repopulate the cache when needed.
 
-![In-Memory Cache](https://i.imgur.com/JUxFxkV.png)
+2. **Memory Limit:**  
+   RAM is a finite resource. You need to carefully size your cache and choose appropriate eviction policies to ensure that the most important data remains accessible while less critical data is removed.
+
+3. **Consistency:**  
+   Cached data can become outdated if the original data changes. Strategies such as cache invalidation, TTL (Time to Live), or write-through/write-behind policies help maintain consistency between the cache and the underlying database.
 
 ---
 
