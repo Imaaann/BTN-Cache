@@ -243,6 +243,32 @@ export class BTNCache<T = any> extends EventEmitter {
   }
 
   /**
+   * Function to change the TTL of a given key in TTL mode
+   * @param key key to be changed
+   * @param newTTL the new TTL that will be assigned, if less than 0 key will be deleted.
+   * @returns boolean value representing if the change was successful
+   */
+  public ttl(key: string | number, newTTL?: number) {
+    if (this.options.invalidationPolicy !== "TTL") return false;
+
+    if (!newTTL) {
+      newTTL = this.options.stdTTL;
+    }
+
+    const found = this.data.get(key);
+    if (found && this._checkData(key, found)) {
+      if (newTTL >= 0) {
+        this.data.set(key, this._wrap(found.value, newTTL, false));
+      } else {
+        this.del([key]);
+      }
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  /**
    * This function will evict a data point based on the set options
    * @param numberOfEvictions number of keys that will get evicted, defaults to 1
    */
