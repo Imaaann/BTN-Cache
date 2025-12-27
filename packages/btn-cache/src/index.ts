@@ -54,6 +54,17 @@ export type StoredData<T> = {
   lastAccessTimeStamp: number;
 };
 
+export type CacheEventMap<T> = {
+  set: [key: string | number, data: T];
+  get: [key: string | number, data: T];
+  del: [key: string | number, data?: T];
+  miss: [key: string | number];
+  expired: [key: string | number, cachedData: StoredData<T>];
+  error: [message: string];
+  flush: [];
+  "flush-stats": [];
+};
+
 const DEFAULT_OPTIONS: CacheOptions<unknown> = {
   evictionPolicy: "RANDOM",
   deleteOnExpire: true,
@@ -64,7 +75,7 @@ const DEFAULT_OPTIONS: CacheOptions<unknown> = {
   checkPeriod: 300,
 };
 
-export class BTNCache<T = any> extends EventEmitter {
+export class BTNCache<T = any> extends EventEmitter<CacheEventMap<T>> {
   private data = new Map<string | number, StoredData<T>>();
   private options: CacheOptions<T>;
   private stats: CacheStats;
@@ -130,7 +141,7 @@ export class BTNCache<T = any> extends EventEmitter {
       this.stats.hits++;
       found.numberOfAccess++;
       found.lastAccessTimeStamp = Date.now();
-      this.emit("get", key, found);
+      this.emit("get", key, this._unwrap(found));
       return this._unwrap(found);
     } else {
       this.stats.misses++;
@@ -158,7 +169,7 @@ export class BTNCache<T = any> extends EventEmitter {
         found.numberOfAccess++;
         found.lastAccessTimeStamp = Date.now();
         all_found[key] = this._unwrap(found);
-        this.emit("get", key, found);
+        this.emit("get", key, this._unwrap(found));
       } else {
         this.stats.misses++;
         this.emit("miss", key);
@@ -344,6 +355,7 @@ export class BTNCache<T = any> extends EventEmitter {
       hits: 0,
       misses: 0,
     };
+    this.emit("flush");
   }
 
   /**
@@ -357,6 +369,7 @@ export class BTNCache<T = any> extends EventEmitter {
       hits: 0,
       misses: 0,
     };
+    this.emit("flush-stats");
   }
 
   /**
@@ -368,6 +381,7 @@ export class BTNCache<T = any> extends EventEmitter {
       ...newOptions,
       ...this.options,
     } as CacheOptions<T>;
+    this.emit("settings-change", this.options);
   }
 
   /**
