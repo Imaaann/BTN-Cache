@@ -176,6 +176,11 @@ export class BTNCache<T = any> extends EventEmitter {
     return true;
   }
 
+  /**
+   * Function to add multiple data points to the cache
+   * @param keyValueSet All of the keys that will be added, optional ttl argument will be ignored if not in TTL invalidation mode.
+   * @emits "set" Indicates that a value has been set correctly.
+   */
   public many_set(keyValueSet: {
     [key: string | number]: {
       ttl?: number;
@@ -187,6 +192,7 @@ export class BTNCache<T = any> extends EventEmitter {
     for (const keyValuePair of Object.entries(keyValueSet)) {
       const [key, { ttl, data }] = keyValuePair;
       this.set(key, data, ttl);
+      this.emit("set", key, data);
     }
   }
 
