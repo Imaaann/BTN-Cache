@@ -70,9 +70,9 @@ const DEFAULT_OPTIONS: CacheOptions<unknown> = {
   deleteOnExpire: true,
   maxKeys: -1,
   invalidationPolicy: "TTL",
-  stdTTL: 500,
+  stdTTL: 500 * 1000,
   useClones: true,
-  checkPeriod: 300,
+  checkPeriod: 300 * 1000,
 };
 
 export class BTNCache<T = any> extends EventEmitter<CacheEventMap<T>> {
@@ -258,7 +258,8 @@ export class BTNCache<T = any> extends EventEmitter<CacheEventMap<T>> {
    */
   public has(key: string | number) {
     const found = this.data.get(key);
-    return found && this._checkData(key, found);
+    if (!found) return false;
+    return this._checkData(key, found);
   }
 
   /**
@@ -378,8 +379,8 @@ export class BTNCache<T = any> extends EventEmitter<CacheEventMap<T>> {
    */
   public setSettings(newOptions: CacheOptionsInput<T>) {
     this.options = {
-      ...newOptions,
       ...this.options,
+      ...newOptions,
     } as CacheOptions<T>;
     this.emit("settings-change", this.options);
   }
@@ -415,7 +416,7 @@ export class BTNCache<T = any> extends EventEmitter<CacheEventMap<T>> {
     if (start && this.options.checkPeriod) {
       this.checkTimeout = setTimeout(
         () => this._checkClock(start),
-        this.options.checkPeriod * 1000
+        this.options.checkPeriod
       );
       this.checkTimeout.unref();
     }
@@ -529,12 +530,13 @@ export class BTNCache<T = any> extends EventEmitter<CacheEventMap<T>> {
    * Internal function to check if the cache is full, if so evict data according to the eviction policy
    * @param [padding=0] How big the empty space should be.
    */
-  private _checkAndEvict(padding: number = 0) {
-    if (
-      this.options.maxKeys > -1 &&
-      this.stats.keys + padding >= this.options.maxKeys
-    ) {
-      this._evictData(padding);
+  private _checkAndEvict(padding: number = 1) {
+    if (this.options.maxKeys < 0) return;
+
+    const overflow = this.stats.keys + padding - this.options.maxKeys;
+
+    if (overflow > 0) {
+      this._evictData(overflow);
     }
   }
 
@@ -576,7 +578,7 @@ export class BTNCache<T = any> extends EventEmitter<CacheEventMap<T>> {
       }
     } else if (this.options.invalidationPolicy === "EVENT") {
       const predicateResult = this.options.predicate(data);
-      if (!predicateResult) {
+      if (predicateResult) {
         deleteAndEmit();
       }
     }
@@ -613,7 +615,7 @@ export class BTNCache<T = any> extends EventEmitter<CacheEventMap<T>> {
 
     let lifetime = -1;
     if (this.options.invalidationPolicy === "TTL") {
-      const TTLMultiplication = 1000;
+      const TTLMultiplication = 1;
       if (ttl == 0) {
         lifetime = 0;
       } else if (ttl) {
