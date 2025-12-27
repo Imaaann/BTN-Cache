@@ -69,6 +69,7 @@ export class BTNCache<T = any> extends EventEmitter {
   private options: CacheOptions<T>;
   private stats: CacheStats;
   private checkTimeout!: NodeJS.Timeout;
+  private queue: (string | number)[] | null = null;
 
   /**
    * Creates a new in memory cache using the options given to the constructor
@@ -100,6 +101,10 @@ export class BTNCache<T = any> extends EventEmitter {
       typeof this.options.predicate !== "function"
     ) {
       throw new Error("EVENT invalidation requires a predicate");
+    }
+
+    if (this.options.evictionPolicy == "FIFO") {
+      this.queue = [];
     }
 
     this.stats = {
@@ -188,6 +193,10 @@ export class BTNCache<T = any> extends EventEmitter {
     this.data.set(key, this._wrap(data, ttl));
     this.stats.vsize += this._getDataLength(data);
 
+    if (this.options.evictionPolicy == "FIFO" && this.queue) {
+      this.queue.push(key);
+    }
+
     if (!existent) {
       this.stats.ksize += this._getDataLength(key);
       this.stats.keys++;
@@ -252,11 +261,19 @@ export class BTNCache<T = any> extends EventEmitter {
     for (const key of keys) {
       if (this.data.has(key)) {
         const found = this.data.get(key);
+
         this.stats.vsize -= this._getDataLength(found);
         this.stats.ksize -= this._getDataLength(key);
         this.stats.keys--;
+
         delCount++;
+
         this.data.delete(key);
+
+        if (this.options.evictionPolicy == "FIFO" && this.queue) {
+          this.queue = this.queue.filter((k) => key !== k);
+        }
+
         this.emit("del", key, found?.value);
       }
     }
@@ -361,6 +378,18 @@ export class BTNCache<T = any> extends EventEmitter {
   }
 
   /**
+   * Function that returns all the present keys in the cache
+   * @returns List of keys present in the cache.
+   */
+  public keys() {
+    const keys = [];
+    for (const key of this.data.keys()) {
+      keys.push(key);
+    }
+    return keys;
+  }
+
+  /**
    * Internal function to check the keys for expiration
    * @param start decides if the next check will happen
    */
@@ -383,8 +412,104 @@ export class BTNCache<T = any> extends EventEmitter {
   /**
    * This function will evict a data point based on the set options
    * @param numberOfEvictions number of keys that will get evicted, defaults to 1
+   * @emits "error" will emit an error if an undefined key is trying to be evicted.
    */
-  private _evictData(numberOfEvictions: number = 1) {}
+  private _evictData(numberOfEvictions: number = 1) {
+    const evictors = {
+      FIFO: () => this._evictFIFO(),
+      LRU: () => this._evictLRU(),
+      LFU: () => this._evictLFU(),
+      RANDOM: () => this._evictRandom(),
+    } as const;
+
+    let evicted: string | number | undefined = undefined;
+    for (let i = 0; i < numberOfEvictions; i++) {
+      evicted = evictors[this.options.evictionPolicy]();
+
+      if (evicted === undefined) {
+        this.emit("error", "ERROR_UNDEFINED_EVICTION");
+        break;
+      }
+
+      this.del([evicted]);
+    }
+  }
+
+  /**
+   * Internal function that implements the RANDOM eviction policy
+   * @returns the key to be removed
+   */
+  private _evictRandom() {
+    const keys = this.keys();
+    if (keys.length === 0) return undefined;
+
+    const evictedIndex = Math.floor(Math.random() * keys.length);
+    return keys[evictedIndex];
+  }
+
+  /**
+   * Internal function that implements the LRU eviction policy
+   * @returns the key to be removed
+   */
+  private _evictLRU() {
+    const now = Date.now();
+    return this.keys().reduce<
+      | {
+          key: string | number;
+          difference: number;
+        }
+      | undefined
+    >((accumulator, current) => {
+      const meta = this.getMeta(current);
+      if (!meta) return accumulator;
+
+      const difference = now - meta.lastAccessTime;
+      if (!accumulator || difference >= accumulator.difference) {
+        return {
+          key: current,
+          difference,
+        };
+      }
+
+      return accumulator;
+    }, undefined)?.key;
+  }
+
+  /**
+   * Internal function that implements the LFU eviction policy
+   * @returns the key to be removed
+   */
+  private _evictLFU() {
+    return this.keys().reduce<
+      | {
+          key: string | number;
+          minimum: number;
+        }
+      | undefined
+    >((accumulator, current) => {
+      const meta = this.getMeta(current);
+      if (!meta) return accumulator;
+
+      if (!accumulator || meta.numberOfAccesses <= accumulator.minimum) {
+        return {
+          key: current,
+          minimum: meta.numberOfAccesses,
+        };
+      }
+
+      return accumulator;
+    }, undefined)?.key;
+  }
+
+  /**
+   * Internal function that implements the FIFO eviction policy
+   * @returns the key to be removed
+   */
+  private _evictFIFO() {
+    if (this.queue) {
+      return this.queue.shift();
+    }
+  }
 
   /**
    * Internal function to check if the cache is full, if so evict data according to the eviction policy
