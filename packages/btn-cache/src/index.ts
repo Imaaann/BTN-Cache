@@ -43,6 +43,7 @@ export type CacheStats = {
   keys: number;
   hits: number;
   misses: number;
+  evictions: number;
   ksize: number;
   vsize: number;
 };
@@ -61,6 +62,7 @@ export type CacheEventMap<T> = {
   miss: [key: string | number];
   expired: [key: string | number, cachedData: StoredData<T>];
   error: [message: string];
+  evicted: [key: string | number, data?: T];
   flush: [];
   "flush-stats": [];
 };
@@ -122,6 +124,7 @@ export class BTNCache<T = any> extends EventEmitter<CacheEventMap<T>> {
       keys: 0,
       hits: 0,
       misses: 0,
+      evictions: 0,
       ksize: 0,
       vsize: 0,
     };
@@ -352,6 +355,7 @@ export class BTNCache<T = any> extends EventEmitter<CacheEventMap<T>> {
     this.stats = {
       keys: 0,
       vsize: 0,
+      evictions: 0,
       ksize: 0,
       hits: 0,
       misses: 0,
@@ -367,6 +371,7 @@ export class BTNCache<T = any> extends EventEmitter<CacheEventMap<T>> {
       keys: 0,
       vsize: 0,
       ksize: 0,
+      evictions: 0,
       hits: 0,
       misses: 0,
     };
@@ -446,7 +451,9 @@ export class BTNCache<T = any> extends EventEmitter<CacheEventMap<T>> {
         break;
       }
 
+      this.emit("evicted", evicted, this.get(evicted));
       this.del([evicted]);
+      this.stats.evictions++;
     }
   }
 
