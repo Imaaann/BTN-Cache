@@ -11,12 +11,9 @@ export function createReadRouter(
 
   router.get("/", async (_req, res) => {
     const start = performance.now();
-
-    const message = await readWithStrategy(
-      getReadStrategy(),
-      cache,
-      "random",
-      () => getRandomMessage()
+    const key = `random:${Date.now()}:${Math.random()}`;
+    const message = await readWithStrategy(getReadStrategy(), cache, key, () =>
+      getRandomMessage()
     );
 
     const time = performance.now() - start;
