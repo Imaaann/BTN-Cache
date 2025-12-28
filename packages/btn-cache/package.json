@@ -1,8 +1,21 @@
 {
-  "name": "@btn/cache",
-  "version": "0.1.0",
+  "name": "btn-cache",
+  "version": "1.0.1",
   "private": false,
-  "description": "Naive implementation of in-memory caching inspired by node-cache",
+  "description": "Type safe implementation of in-memory caching inspired by node-cache",
+  "keywords": [
+    "caching",
+    "in-memory",
+    "backend",
+    "server-side",
+    "server",
+    "library",
+    "lightweight",
+    "light",
+    "simple"
+  ],
+  "author": "imaaann",
+  "license": "MIT",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "exports": {

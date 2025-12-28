@@ -1,5 +1,6 @@
 node_modules/
 examples/playground/data
+.npmrc
 *.db
 *.db-wal
 # Logs
