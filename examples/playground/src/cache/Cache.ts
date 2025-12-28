@@ -1,9 +1,20 @@
 import { CacheOptionsInput, CacheStats } from "@btn/cache";
 
-export interface Cache {
-  get(key: string): Promise<any>;
-  set(key: string, value: any): Promise<void>;
-  del(key: string): Promise<void>;
-  stats(): CacheStats;
-  configure(cfg: CacheOptionsInput<any>): void;
+export type EvictionPolicy = "LRU" | "FIFO" | "LFU" | "RANDOM";
+
+export interface ConfigureAdapter<T = unknown> {
+  maxKeys?: number;
+  evictionPolicy?: EvictionPolicy;
+}
+
+export interface Cache<T> {
+  get(key: string): Promise<T | undefined> | T | undefined;
+  set(key: string, value: T): Promise<void> | void | undefined;
+  del(key: string): Promise<void> | void | undefined;
+  stats(): {
+    hits: number;
+    misses: number;
+    evictions: number;
+  };
+  configure(cfg: ConfigureAdapter<T>): void;
 }
