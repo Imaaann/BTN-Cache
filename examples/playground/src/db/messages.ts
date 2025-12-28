@@ -6,7 +6,6 @@ export interface MessageRow {
   message: string;
   timestamp: number;
 }
-
 const insertStatement = () =>
   getDB().prepare(
     "INSERT INTO messages (username, message, timestamp) VALUES (?,?,?)"
@@ -24,13 +23,47 @@ const getOldestStatement = () =>
 const getRandomStatement = () =>
   getDB().prepare("SELECT * FROM messages ORDER BY RANDOM() LIMIT 1");
 
+const countStmt = () =>
+  getDB().prepare(`
+  SELECT COUNT(*) as count FROM messages
+`);
+
+const deleteOldStmt = () =>
+  getDB().prepare(`
+  DELETE FROM messages
+  WHERE message_id IN (
+    SELECT message_id FROM messages
+    ORDER BY message_id ASC
+    LIMIT ?
+  )
+`);
+
 export function insertMessage(
   username: string,
   message: string,
   timestamp = Date.now()
-) {
-  const result = insertStatement().run(username, message, timestamp);
-  return Number(result.lastInsertRowid);
+): MessageRow {
+  const info = insertStatement().run(username, message, timestamp);
+
+  pruneIfNeeded();
+
+  return {
+    message_id: info.lastInsertRowid as number,
+    username,
+    message,
+    timestamp,
+  };
+}
+
+const MAX_MESSAGES = 1_000_000;
+const PRUNE_BATCH_SIZE = 10_000;
+
+export function pruneIfNeeded() {
+  const { count } = countStmt().get() as { count: number };
+
+  if (count > MAX_MESSAGES) {
+    deleteOldStmt().run(PRUNE_BATCH_SIZE);
+  }
 }
 
 export function getMessageById(id: number) {

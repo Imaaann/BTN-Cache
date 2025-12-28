@@ -2,53 +2,38 @@ import { Router } from "express";
 import { CacheManager } from "../cache/CacheManager";
 import { RedisAdapter } from "../cache/redis";
 import { BTNAdapter } from "../cache/btn";
-
-type TestValue = any;
+import { createReadRouter } from "./read";
+import {
+  LoadingStrategies,
+  WriteStrategies,
+  WriteStrategyExecutor,
+} from "../strategy";
+import { createWriteRouter } from "./write";
+import { MessageRow } from "../db/messages";
 
 export const apiRouter = Router();
 
-const cache = new CacheManager<TestValue>(
+const cache = new CacheManager<MessageRow>(
   "BTN",
   () => new BTNAdapter(),
   () => new RedisAdapter("redis://localhost:6379", "demo:")
 );
 
-/**
- * GET /api/get?key=goopy
- */
-apiRouter.get("/get", async (req, res) => {
-  const key = req.query.key as string;
-  if (!key) return res.status(400).json({ error: "Key required" });
+const strategies: {
+  read: LoadingStrategies;
+  write: WriteStrategies;
+} = {
+  read: "lazy",
+  write: "aside",
+};
 
-  const value = await cache.get(key);
-  if (!value) {
-    return res.json({ key, message: "Cache Miss" });
-  }
-  res.json({ key, value });
-});
+const readRouter = createReadRouter(cache, () => strategies.read);
+const writeRouter = createWriteRouter(
+  new WriteStrategyExecutor(cache, strategies.write)
+);
 
-/**
- * POST /api/set
- * { "key": "Bloop", "value": 123}
- */
-apiRouter.post("/set", async (req, res) => {
-  const { key, value } = req.body;
-  if (!key) return res.status(400).json({ error: "Key required" });
-
-  await cache.set(key, value);
-  res.json({ ok: true });
-});
-
-/**
- * DELETE /api/del?key=foo
- */
-apiRouter.delete("/del", async (req, res) => {
-  const key = req.query.key as string;
-  if (!key) return res.status(400).json({ error: "Key required" });
-
-  await cache.del(key);
-  res.json({ ok: true });
-});
+apiRouter.use("/read", readRouter);
+apiRouter.use("/write", writeRouter);
 
 /**
  * GET /api/stats

@@ -13,7 +13,8 @@
     "@btn/cache": "*",
     "better-sqlite3": "^12.5.0",
     "express": "^5.2.1",
-    "ioredis": "^5.8.2"
+    "ioredis": "^5.8.2",
+    "ulid": "^3.0.2"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",
