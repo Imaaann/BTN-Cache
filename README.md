@@ -4,6 +4,14 @@ BTN Cache (Better than nothing cache) is a naive implementation of an in memory 
 
 This library allows you to integrate caching to any of your existing systems.
 
+# Installation
+
+You can install btn-cache directly from NPM (Node package manager)
+
+```
+npm i btn-cache
+```
+
 # Usage
 
 ---
