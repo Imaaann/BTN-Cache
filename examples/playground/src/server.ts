@@ -1,9 +1,15 @@
 import express from "express";
 import path from "path";
 import { apiRouter } from "./api/index";
+import { initSqlite } from "./db/sqlite";
 
 const app = express();
 const PORT = process.env.PORT ?? 3000;
+
+initSqlite({
+  filename: "data/messages.db",
+  mode: "unsafe",
+});
 
 app.use(express.json());
 app.use("/api", apiRouter);
