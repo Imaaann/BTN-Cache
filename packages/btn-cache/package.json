@@ -1,6 +1,7 @@
 {
   "name": "@btn/cache",
   "version": "0.1.0",
+  "private": false,
   "description": "Naive implementation of in-memory caching inspired by node-cache",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
