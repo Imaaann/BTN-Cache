@@ -1,6 +1,6 @@
 import express from "express";
 import path from "path";
-import { apiRouter } from "./api/index";
+import apiRouter from "./api/index";
 
 const app = express();
 const PORT = process.env.PORT ?? 3000;

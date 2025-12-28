@@ -1,7 +1,6 @@
 import { Router } from "express";
 import { insertMessage, MessageRow } from "../db/messages";
 import { WriteStrategyExecutor } from "../strategy";
-import { ulid } from "ulid";
 
 export function createWriteRouter(writer: WriteStrategyExecutor<MessageRow>) {
   const router = Router();
@@ -9,7 +8,7 @@ export function createWriteRouter(writer: WriteStrategyExecutor<MessageRow>) {
     const start = performance.now();
 
     const message: MessageRow = {
-      message_id: ulid(),
+      message_id: Math.floor(Math.random() * 1_000_000),
       username: "stress_writer",
       message: Math.random().toString(36),
       timestamp: Date.now(),

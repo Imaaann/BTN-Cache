@@ -10,8 +10,31 @@ import {
 } from "../strategy";
 import { createWriteRouter } from "./write";
 import { MessageRow } from "../db/messages";
+import { Cache } from "../cache/Cache";
+import { createStressRouter } from "./stress";
+import { createStressPatternRouter } from "./pattern";
+import { createStatsRouter } from "./stats";
+import { createSafeRouter } from "./safe";
 
-export const apiRouter = Router();
+export function createApi(
+  cache: Cache<MessageRow>,
+  writer: WriteStrategyExecutor<MessageRow>
+) {
+  const router = Router();
+
+  router.use("/stress", createStressRouter(cache, writer));
+  router.use("/stress/pattern", createStressPatternRouter(cache, writer));
+  router.use("/stats", createStatsRouter(cache, writer));
+  router.use("/safe", createSafeRouter(cache, writer));
+
+  router.use(
+    "/read",
+    createReadRouter(cache, () => strategies.read)
+  );
+  router.use("/write", createWriteRouter(writer));
+
+  return router;
+}
 
 const cache = new CacheManager<MessageRow>(
   "BTN",
@@ -27,29 +50,16 @@ const strategies: {
   write: "aside",
 };
 
-const readRouter = createReadRouter(cache, () => strategies.read);
-const writeRouter = createWriteRouter(
+const apiRouter = createApi(
+  cache,
   new WriteStrategyExecutor(cache, strategies.write)
 );
 
-apiRouter.use("/read", readRouter);
-apiRouter.use("/write", writeRouter);
-
 /**
- * GET /api/stats
- */
-apiRouter.get("/stats", async (_req, res) => {
-  res.json({
-    backend: cache.current(),
-    stats: cache.stats(),
-  });
-});
-
-/**
- * POST /api/switch
+ * POST /api/cache/switch
  * {backend: "BTN" | "redis"}
  */
-apiRouter.post("/switch", (req, res) => {
+apiRouter.post("/cache/switch", (req, res) => {
   const { backend } = req.body;
   if (backend !== "BTN" && backend !== "redis") {
     return res.status(400).json({ error: "Invalid backend" });
@@ -60,10 +70,12 @@ apiRouter.post("/switch", (req, res) => {
 });
 
 /**
- * PUT /api/configure
+ * PUT /api/cache/configure
  * {"maxkeys": 100, "evictionPolicy": "LRU"}
  */
-apiRouter.put("/configure", (req, res) => {
+apiRouter.put("/cache/configure", (req, res) => {
   cache.configure(req.body);
   res.json({ ok: true });
 });
+
+export default apiRouter;

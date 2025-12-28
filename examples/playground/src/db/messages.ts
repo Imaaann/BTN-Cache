@@ -6,7 +6,7 @@ initSqlite({
 });
 
 export interface MessageRow {
-  message_id: string;
+  message_id: number;
   username: string;
   message: string;
   timestamp: number;
@@ -46,7 +46,7 @@ const randomByOffsetStmt = getDB().prepare(
 );
 
 export function insertMessage(
-  message_id: string,
+  message_id: number,
   username: string,
   message: string,
   timestamp = Date.now()
