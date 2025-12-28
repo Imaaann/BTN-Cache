@@ -47,7 +47,7 @@ const strategies: {
   write: WriteStrategies;
 } = {
   read: "lazy",
-  write: "aside",
+  write: "through",
 };
 
 const apiRouter = createApi(
