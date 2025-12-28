@@ -1,9 +1,13 @@
 {
   "name": "cache-example-express",
   "private": true,
-  "type": "module",
+  "type": "commonjs",
   "scripts": {
-    "dev": "tsx --no-cache src/index.ts"
+    "redis:start": "docker-compose up -d redis",
+    "redis:stop": "docker-compose down",
+    "redis:logs": "docker-compose logs -f redis",
+    "server": "ts-node src/server.ts",
+    "dev": "npm run redis:start && npm run server"
   },
   "dependencies": {
     "@btn/cache": "*",
@@ -12,6 +16,7 @@
   },
   "devDependencies": {
     "@types/express": "^5.0.6",
+    "ts-node": "^10.9.2",
     "tsx": "^4.7.0",
     "typescript": "^5.4.0"
   }

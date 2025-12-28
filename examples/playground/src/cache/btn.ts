@@ -1,5 +1,5 @@
 import { CacheStats, CacheOptionsInput, BTNCache } from "@btn/cache";
-import { Cache, ConfigureAdapter } from "./Cache.js";
+import { Cache, ConfigureAdapter } from "./Cache";
 
 export class BTNAdapter<T> implements Cache<T> {
   private cache: BTNCache<T>;

@@ -1,5 +1,5 @@
-import { Redis } from "ioredis";
-import { Cache, ConfigureAdapter, EvictionPolicy } from "./Cache.js";
+import Redis from "ioredis";
+import { Cache, ConfigureAdapter, EvictionPolicy } from "./Cache";
 
 export class RedisAdapter<T> implements Cache<T> {
   private redis: Redis;
@@ -15,7 +15,7 @@ export class RedisAdapter<T> implements Cache<T> {
   private evictions = 0;
 
   constructor(url?: string, prefix?: string) {
-    this.redis = new Redis({ path: url });
+    this.redis = new Redis(url ?? "redis://localhost:6379");
     this.prefix = prefix ?? "cache:";
   }
 

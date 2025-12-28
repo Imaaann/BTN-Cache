@@ -1,7 +1,7 @@
 import { Router } from "express";
-import { CacheManager } from "../cache/CacheManager.js";
-import { RedisAdapter } from "../cache/redis.js";
-import { BTNAdapter } from "../cache/btn.js";
+import { CacheManager } from "../cache/CacheManager";
+import { RedisAdapter } from "../cache/redis";
+import { BTNAdapter } from "../cache/btn";
 
 type TestValue = any;
 
@@ -21,6 +21,9 @@ apiRouter.get("/get", async (req, res) => {
   if (!key) return res.status(400).json({ error: "Key required" });
 
   const value = await cache.get(key);
+  if (!value) {
+    return res.json({ key, message: "Cache Miss" });
+  }
   res.json({ key, value });
 });
 
@@ -72,10 +75,10 @@ apiRouter.post("/switch", (req, res) => {
 });
 
 /**
- * POST /api/configure
+ * PUT /api/configure
  * {"maxkeys": 100, "evictionPolicy": "LRU"}
  */
-apiRouter.post("/configure", (req, res) => {
+apiRouter.put("/configure", (req, res) => {
   cache.configure(req.body);
   res.json({ ok: true });
 });
